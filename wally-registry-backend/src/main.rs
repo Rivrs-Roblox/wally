@@ -173,14 +173,13 @@ async fn publish(
         }
     }
 
-    let package_metadata = index.get_package_metadata(manifest.package_id().name());
+    let package_name = manifest.package_id().name();
+    let package_metadata = index.get_package_metadata(&package_name);
 
-    if let Ok(metadata) = package_metadata {
-        if metadata.versions.iter().any(|published_manifest| {
-            published_manifest.package.version == manifest.package.version
-        }) {
-            return Err(format_err!("package already exists in index").status(Status::Conflict));
-        }
+    if package_name.starts_with("release/") && metadata.versions.iter().any(|published_manifest| {
+        published_manifest.package.version == manifest.package.version
+    }) {
+        return Err(format_err!("package already exists in index").status(Status::Conflict));
     }
 
     storage
