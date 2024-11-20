@@ -1,4 +1,3 @@
-import React from "react"
 import { ButtonLink } from "./Button"
 import { Heading } from "./Typography"
 

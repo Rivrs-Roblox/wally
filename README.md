@@ -1,7 +1,6 @@
 <div align="center" width="800">
     <img alt="Wally Logo" src="wally-logo.svg" />
     <h1>Wally, a package manager for Roblox
-    	<br><a href="https://upliftgames-wally.statuspage.io/"><img alt="Dynamic Status Badge" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fvhs2807lh6ws.statuspage.io%2Fapi%2Fv2%2Fsummary.json&query=%24.status.description&label=Status%20"></a>
 	</h1>
 </div>
 
@@ -53,7 +52,7 @@ Pre-built binaries are available for Windows, macOS, and Linux from the [GitHub 
 [releases]: https://github.com/UpliftGames/wally/releases
 
 ### From Source
-It's straightforward to compile Wally from source. Wally requires Rust 1.51.0 or newer.
+It's straightforward to compile Wally from source. Wally requires Rust 1.80.0 or newer.
 
 Clone the repository and use:
 
@@ -74,7 +73,6 @@ Parity with:
 Installs all packages.
 
 `--locked` matches `cargo XXX --locked`, which will error if there is not an up-to-date lockfile. Intended for use on CI machines.
-(locked is a planned feature and not yet implemented)
 
 Parity with:
 * `npm install` with no arguments
@@ -172,6 +170,15 @@ realm = "shared"
 # This feature can be used to have split public/private registries to
 # keep internal code private and isolated.
 registry = "https://github.com/upliftgames/wally-index"
+
+# Wally will display this link on the package's page on wally.run.
+# A value should only be set if there is a dedicated website for
+# the package other than the source repository. 
+homepage = "https://eryn.io/roblox-lua-promise/"
+
+# Wally will display this link on package's page on wally.run.
+# The repository field should be a URL to the source repository for a package.
+repository = "https://github.com/evaera/roblox-lua-promise"
 
 # You can also specify files to include or exclude from the package
 # By default gitignore files are respected and Wally won't include hidden

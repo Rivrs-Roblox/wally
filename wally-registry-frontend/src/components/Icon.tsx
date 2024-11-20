@@ -1,4 +1,3 @@
-import React from "react"
 import { IconsId } from "../types/icons"
 
 export default function Icon({

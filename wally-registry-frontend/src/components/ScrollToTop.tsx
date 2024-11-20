@@ -1,17 +1,15 @@
+import { NextRouter, withRouter } from "next/router"
 import { useEffect } from "react"
-import { withRouter } from "react-router-dom"
 
-function ScrollToTop({ history }: { history: any }) {
+function ScrollToTop({ router }: { router: NextRouter }) {
+  const pathname = router.pathname
   useEffect(() => {
-    const unlisten = history.listen(() => {
-      window.scrollTo(0, 0)
-      const checkbox = document.getElementById("nav-open") as HTMLInputElement
-      checkbox.checked = false
-    })
-    return () => {
-      unlisten()
-    }
-  }, [])
+    window.scrollTo(0, 0)
+    const checkbox = document.getElementById("nav-open") as HTMLInputElement
+    checkbox.checked = false
+
+    return () => {}
+  }, [pathname])
 
   return null
 }

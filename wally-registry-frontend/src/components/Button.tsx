@@ -1,8 +1,7 @@
-import React from "react"
-import { Link } from "react-router-dom"
-import styled from "styled-components"
+import Link from "next/link"
+import styled, { css } from "styled-components"
 
-export const Button = styled.button`
+const buttonStyles = css`
   display: inline-block;
   padding: 0.6rem 1.5rem;
   background: var(--wally-brown);
@@ -28,8 +27,17 @@ export const Button = styled.button`
     color: var(--wally-mauve);
   }
 `
-const ButtonLinkInternal = Button.withComponent(Link)
-const ButtonLinkExternal = Button.withComponent("a")
+
+export const Button = styled.button`
+  ${buttonStyles}
+`
+
+const ButtonLinkInternal = styled(Link)`
+  ${buttonStyles}
+`
+const ButtonLinkExternal = styled.a`
+  ${buttonStyles}
+`
 
 export function ButtonLink({
   to,
@@ -45,6 +53,6 @@ export function ButtonLink({
       </ButtonLinkExternal>
     )
   } else {
-    return <ButtonLinkInternal to={to}>{children}</ButtonLinkInternal>
+    return <ButtonLinkInternal href={to}>{children}</ButtonLinkInternal>
   }
 }

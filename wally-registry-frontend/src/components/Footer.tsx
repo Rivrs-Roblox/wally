@@ -1,5 +1,7 @@
+"use client"
+
+import Link from "next/link"
 import React from "react"
-import { Link } from "react-router-dom"
 import styled from "styled-components"
 import SocialLinks from "./SocialLinks"
 
@@ -77,7 +79,7 @@ export default function Footer() {
       <StyledSocialLinks variation="light" />
       <FooterLinks>
         {links.map(([text, url]) => (
-          <Link key={url} to={url}>
+          <Link key={url} href={url}>
             {text}
           </Link>
         ))}

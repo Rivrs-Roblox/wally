@@ -1,5 +1,5 @@
+import Link from "next/link"
 import React from "react"
-import { Link } from "react-router-dom"
 import styled, { keyframes } from "styled-components"
 import { isMobile } from "../breakpoints"
 
@@ -41,7 +41,7 @@ const StyledBlip = styled.div<{
   &:any-link:hover {
     background: var(--wally-red);
 
-    ::before {
+    &::before {
       animation: ${ArrowHoverKeyfames};
       animation-duration: 0.5s;
       animation-fill-mode: forwards;
@@ -49,7 +49,7 @@ const StyledBlip = styled.div<{
     }
   }
 
-  ::before {
+  &::before {
     position: absolute;
     content: "";
     display: inline-block;
@@ -67,7 +67,7 @@ const StyledBlip = styled.div<{
   }
 `
 
-const LinkBlip = StyledBlip.withComponent(Link)
+const LinkBlip = styled(StyledBlip).attrs({ as: Link })``
 
 const TopRow = styled.div`
   display: flex;
@@ -140,6 +140,7 @@ const BottomRow = styled.div`
   margin: 0.2rem 0.5rem 0.3rem 0.5rem;
 `
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Author = styled.span`
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.8rem;
@@ -156,6 +157,7 @@ export default function PackageBlip({
   children,
   title,
   version,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   uniqueId,
   className,
   linkTo,
@@ -173,12 +175,13 @@ export default function PackageBlip({
   linkTo?: string
   inset?: boolean
 }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Component: React.FC<any> = linkTo ? LinkBlip : StyledBlip
 
   return (
     <Component
       className={className}
-      to={`package/${linkTo}`}
+      href={`package/${linkTo}`}
       size={size}
       width={width}
       hidden={hidden}

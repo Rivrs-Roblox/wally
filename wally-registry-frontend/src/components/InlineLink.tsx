@@ -1,5 +1,5 @@
+import Link from "next/link"
 import React from "react"
-import { Link } from "react-router-dom"
 import styled from "styled-components"
 
 export const ExternalLink = styled.a`
@@ -10,14 +10,12 @@ export const ExternalLink = styled.a`
   }
 `
 
-export const InternalLink = ExternalLink.withComponent(Link)
-
 export default function InlineLink({
   to,
   children,
 }: {
   to: string
-  children: React.ReactNode
+  children?: React.ReactNode
 }) {
   if (to.match(/^[a-z/]+:/)) {
     return (
@@ -26,6 +24,10 @@ export default function InlineLink({
       </ExternalLink>
     )
   } else {
-    return <InternalLink to={to}>{children}</InternalLink>
+    return (
+      <ExternalLink as={Link} href={to}>
+        {children}
+      </ExternalLink>
+    )
   }
 }

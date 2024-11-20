@@ -1,8 +1,9 @@
+"use client"
+
 import React from "react"
 import styled, { css } from "styled-components"
-// import albumImage from "../assets/hero/album.png";
 import { breakMobile, isMobileSmall } from "../breakpoints"
-import { ExternalLink, InternalLink } from "./InlineLink"
+import { ExternalLink } from "./InlineLink"
 import { Heading } from "./Typography"
 
 type ColorVariation = "light" | "dark" | "red" | "fade"
@@ -26,7 +27,7 @@ const themes = {
     color: white;
     background: var(--wally-red);
 
-    ${InternalLink}, ${ExternalLink} {
+    ${ExternalLink} {
       border-bottom: 1px dotted white;
       color: white;
 
@@ -69,7 +70,7 @@ const ContentWrapper = styled.div`
   }
 `
 
-const InnerContent = styled.article<{ narrow: boolean }>`
+const InnerContent = styled.article<{ narrow: boolean | undefined }>`
   max-width: ${(props) =>
     props.narrow ? `${breakMobile}px` : "var(--content-width)"};
   margin: 0 auto;
@@ -89,8 +90,8 @@ const InnerContent = styled.article<{ narrow: boolean }>`
 
 export default function ContentSection({
   children,
-  variation,
-  placement,
+  variation = "light",
+  placement = "inline",
   narrow,
 }: {
   children: React.ReactNode
@@ -99,12 +100,9 @@ export default function ContentSection({
   narrow?: boolean
 }) {
   return (
-    <StyledSection
-      variation={variation ?? "light"}
-      placement={placement ?? "inline"}
-    >
+    <StyledSection variation={variation} placement={placement}>
       <ContentWrapper>
-        <InnerContent narrow={narrow ?? false}>{children}</InnerContent>
+        <InnerContent narrow={narrow}>{children}</InnerContent>
       </ContentWrapper>
     </StyledSection>
   )

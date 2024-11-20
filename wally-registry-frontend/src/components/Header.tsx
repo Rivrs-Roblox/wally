@@ -1,14 +1,15 @@
-import React from "react"
-import { useHistory } from "react-router"
-import { Link, NavLink } from "react-router-dom"
+"use client"
+
+import Image from "next/image"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import AsyncSelect from "react-select/async"
 import styled from "styled-components"
-import logo from "../assets/wally-logo.svg"
+import logo from "../../public/assets/wally-logo.svg"
 import { isCondensed, isMobile, isMobileSmall, notMobile } from "../breakpoints"
 import { getWallyPackages } from "../services/wally.api"
 import { WallyPackageBrief } from "../types/wally"
 import Icon from "./Icon"
-import Img from "./Img"
 import SocialLinks from "./SocialLinks"
 
 type WallyOption = {
@@ -72,11 +73,12 @@ const LogoImageLink = styled(Link)`
   }
 `
 
-const LogoImage = styled(Img)`
+const LogoImage = styled(Image)`
+  position: relative !important;
   transition: all 350ms ease;
 
   @media screen and (${notMobile}) {
-    height: 4.8rem;
+    height: 4.8rem !important;
 
     &:hover {
       transition: all 350ms cubic-bezier(0.34, 2, 0.64, 1);
@@ -85,7 +87,7 @@ const LogoImage = styled(Img)`
   }
 
   @media screen and (${isMobile}) {
-    height: 100%;
+    height: 100% !important;
     padding: 0.75rem 0 0.75rem 3rem;
   }
 
@@ -114,7 +116,9 @@ const StyledNav = styled.nav`
     padding: 4rem 2rem;
     left: 0;
     bottom: 0;
-    transition: transform 300ms cubic-bezier(0.34, 2, 0.64, 1), visibility 300ms;
+    transition:
+      transform 300ms cubic-bezier(0.34, 2, 0.64, 1),
+      visibility 300ms;
     transform: translateX(-100%);
     visibility: hidden;
 
@@ -184,18 +188,8 @@ const StyledNav = styled.nav`
   }
 `
 
-const activeClassName = "nav-active"
-
-const StyledNavLink = styled<any>(NavLink).attrs({
-  activeClassName,
-})`
-  && {
-    ${(props) => props.$styles}
-  }
-
-  &.${activeClassName} {
-    color: var(--wally-red);
-  }
+const StyledNavLink = styled(Link)<{ $active: boolean }>`
+  color: ${(props) => (props.$active ? "var(--wally-red)" : "inherit")};
 
   &:hover {
     color: var(--wally-red);
@@ -242,7 +236,9 @@ const Curtain = styled.div`
   position: fixed;
   display: none;
   visibility: hidden;
-  transition: opacity 300ms ease, visibility 300ms;
+  transition:
+    opacity 300ms ease,
+    visibility 300ms;
   opacity: 0;
 
   @media screen and (${isMobile}) {
@@ -265,6 +261,7 @@ const MobilePushDown = styled.div`
   }
 `
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const reactSelectSearchTheme = (theme: any) => ({
   ...theme,
   colors: {
@@ -275,6 +272,7 @@ const reactSelectSearchTheme = (theme: any) => ({
 })
 
 const reactSelectSearchStyles = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   container: (provided: any) => ({
     ...provided,
     flexGrow: 2,
@@ -283,6 +281,7 @@ const reactSelectSearchStyles = {
       margin: "0 0.5rem 0.5rem",
     },
   }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: (provided: any) => ({
     ...provided,
     borderRadius: "var(--radius-small)",
@@ -310,7 +309,10 @@ const filterWallyPackages = async (inputValue: string) => {
 }
 
 export default function Header() {
-  const history = useHistory()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const currentParentPage = pathname ? pathname.split("/")[1] : ""
 
   const loadOptions = async (inputValue: string) =>
     new Promise<WallyOption[]>((resolve) => {
@@ -319,7 +321,7 @@ export default function Header() {
 
   const onChange = (option: WallyOption | null) => {
     if (option) {
-      history.push(`/package/${option.value}`)
+      router.push(`/package/${option.value}`)
     }
   }
 
@@ -345,8 +347,8 @@ export default function Header() {
             <Icon icon="hamburger" />
           </HamburgerButton>
 
-          <LogoImageLink to="/">
-            <LogoImage src={logo} alt="Wally" />
+          <LogoImageLink href="/">
+            <LogoImage src={logo} alt="Wally" loading="eager" fill={true} />
           </LogoImageLink>
 
           <AsyncSelect
@@ -360,22 +362,23 @@ export default function Header() {
             loadOptions={loadOptions}
             onChange={onChange}
             controlShouldRenderValue={false}
+            instanceId={"wally-search-select-bar"}
             placeholder="Search packages..."
           />
 
           <Curtain
             onClick={() =>
-              ((document.getElementById(
-                "nav-open"
-              ) as HTMLInputElement).checked = false)
+              ((
+                document.getElementById("nav-open") as HTMLInputElement
+              ).checked = false)
             }
           />
           <StyledNav>
             {links.map(([text, url]) => (
               <StyledNavLink
-                activeClassName={activeClassName}
-                to={url}
+                href={url}
                 key={url}
+                $active={currentParentPage === text.toLowerCase()}
               >
                 {text}
               </StyledNavLink>

@@ -1,6 +1,6 @@
 {
   "inputDir": "icons",
-  "outputDir": "src/fonts",
+  "outputDir": "src/app/fonts",
   "fontTypes": ["woff2"],
   "fontsUrl": "",
   "assetTypes": ["ts", "css"],
