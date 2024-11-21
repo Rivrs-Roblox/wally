@@ -19,6 +19,7 @@ use figment::{
     providers::{Env, Format, Toml},
     Figment,
 };
+use libwally::manifest;
 use libwally::{
     manifest::{Manifest, MANIFEST_FILE_NAME},
     package_id::PackageId,
@@ -173,17 +174,14 @@ async fn publish(
         }
     }
 
-    println('{}', manifest);
+    let package_metadata = index.get_package_metadata(manifest.package_id().name());
 
-    let package_name = manifest.package_id().name();
-    let package_metadata = index.get_package_metadata(&package_name);
-
-    println('{}', package_name);
-
-    if package_name.starts_with("release/") && metadata.versions.iter().any(|published_manifest| {
-        published_manifest.package.version == manifest.package.version
-    }) {
-        return Err(format_err!("package already exists in index").status(Status::Conflict));
+    if let Ok(metadata) = package_metadata {
+        if metadata.versions.iter().any(|published_manifest| {
+            published_manifest.package.version == manifest.package.version
+        }) && manifest.package_id().name().to_string().starts_with("realease/") {
+            return Err(format_err!("package already exists in index").status(Status::Conflict));
+        }
     }
 
     storage
