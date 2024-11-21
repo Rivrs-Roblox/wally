@@ -179,7 +179,7 @@ async fn publish(
     if let Ok(metadata) = package_metadata {
         if metadata.versions.iter().any(|published_manifest| {
             published_manifest.package.version == manifest.package.version
-        }) && manifest.package_id().name().to_string().starts_with("realease/") {
+        }) && manifest.package_id().name().to_string().starts_with("release/") {
             return Err(format_err!("package already exists in index").status(Status::Conflict));
         }
     }
