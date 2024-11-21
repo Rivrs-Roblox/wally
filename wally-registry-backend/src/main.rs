@@ -173,8 +173,12 @@ async fn publish(
         }
     }
 
-    let package_name = manifest.package_id().name().as_str();
+    println('{}', manifest);
+
+    let package_name = manifest.package_id().name();
     let package_metadata = index.get_package_metadata(&package_name);
+
+    println('{}', package_name);
 
     if package_name.starts_with("release/") && metadata.versions.iter().any(|published_manifest| {
         published_manifest.package.version == manifest.package.version
