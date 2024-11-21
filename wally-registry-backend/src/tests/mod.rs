@@ -16,7 +16,6 @@ fn init_test_index_remote() -> anyhow::Result<url::Url> {
     let tree_id = repo.index()?.write_tree()?;
     let tree = repo.find_tree(tree_id)?;
 
-    // Setting head is required so clones will clone main instead of master (which doesn't exist)
     repo.set_head("refs/heads/main")?;
     repo.commit(
         Some("refs/heads/main"),
@@ -162,7 +161,7 @@ fn publish_unauthenticated_401() {
 fn publish() {
     let contents = PackageBuilder::new("biff/hello@1.0.0").contents();
 
-    let client = new_client(AuthMode::ApiKey(String::from("hello")));
+    let client = new_client(AuthMode::ApiKey(vec![String::from("hello")]));
     let response = client
         .post("/v1/publish")
         .header(Accept::JSON)
@@ -181,10 +180,9 @@ fn publish() {
 fn read_write_double_key() {
     let client = new_client(AuthMode::DoubleApiKey {
         read: None,
-        write: String::from("A write key"),
+        write: vec![String::from("A write key")],
     });
 
-    // We can read with no API key
     let response = client
         .get("/v1/package-contents/biff/minimal/0.1.0")
         .dispatch();
@@ -195,7 +193,6 @@ fn read_write_double_key() {
     }
     .assert(response);
 
-    // But we can't write with no API key
     let contents = PackageBuilder::new("biff/hello@1.0.0").contents();
     let response = client
         .post("/v1/publish")
@@ -209,7 +206,6 @@ fn read_write_double_key() {
     }
     .assert(response);
 
-    // Unless we use the correct API key
     let response = client
         .post("/v1/publish")
         .header(Accept::JSON)
@@ -227,7 +223,7 @@ fn read_write_double_key() {
 #[test]
 fn publish_duplicate() {
     let contents = PackageBuilder::new("biff/hello@0.1.0").contents();
-    let client = new_client(AuthMode::ApiKey(String::from("hello")));
+    let client = new_client(AuthMode::ApiKey(vec![String::from("hello")]));
     let send_request = || {
         client
             .post("/v1/publish")
@@ -254,7 +250,7 @@ fn publish_duplicate() {
 fn publish_updates_git_remote() {
     let remote = init_test_index_remote().unwrap();
     let repo = git2::Repository::open(remote.to_file_path().unwrap()).unwrap();
-    let client = new_client_with_remote(AuthMode::ApiKey(String::from("hello")), remote);
+    let client = new_client_with_remote(AuthMode::ApiKey(vec![String::from("hello")]), remote);
 
     let commit = repo.head().unwrap().peel_to_commit().unwrap();
     assert_eq!(commit.message().unwrap(), "Initial commit");
@@ -271,13 +267,11 @@ fn publish_updates_git_remote() {
     assert_ne!(commit.message().unwrap(), "Initial commit");
 }
 
-/// Ensures the package index will update when the remote is modified before a publish request
-/// This is to check our update implementation as well as support for multiple api nodes
 #[test]
 fn publish_then_publish_elsewhere() {
     let remote = init_test_index_remote().unwrap();
-    let client1 = new_client_with_remote(AuthMode::ApiKey(String::from("hello")), remote.clone());
-    let client2 = new_client_with_remote(AuthMode::ApiKey(String::from("hello")), remote);
+    let client1 = new_client_with_remote(AuthMode::ApiKey(vec![String::from("hello")]), remote.clone());
+    let client2 = new_client_with_remote(AuthMode::ApiKey(vec![String::from("hello")]), remote);
 
     let contents = PackageBuilder::new("biff/hello@1.0.0").contents();
     let response = client1
@@ -308,7 +302,6 @@ fn publish_then_publish_elsewhere() {
     .assert(response);
 }
 
-// TODO: Implement yanking
 #[test]
 #[ignore]
 fn yank() {}

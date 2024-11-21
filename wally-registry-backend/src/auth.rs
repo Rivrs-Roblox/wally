@@ -17,10 +17,10 @@ use crate::{config::Config, error::ApiErrorStatus};
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "value", rename_all = "kebab-case")]
 pub enum AuthMode {
-    ApiKey(String),
+    ApiKey(Vec<String>),
     DoubleApiKey {
-        read: Option<String>,
-        write: String,
+        read: Option<Vec<String>>,
+        write: Vec<String>,
     },
     GithubOAuth {
         #[serde(rename = "client-id")]
@@ -71,7 +71,7 @@ impl fmt::Debug for AuthMode {
     }
 }
 
-fn match_api_key<T>(request: &Request<'_>, key: &str, result: T) -> Outcome<T, Error> {
+fn match_api_key<T>(request: &Request<'_>, keys: &[String], result: T) -> Outcome<T, Error> {
     let input_api_key: String = match request.headers().get_one("authorization") {
         Some(key) if key.starts_with("Bearer ") => (key[6..].trim()).to_owned(),
         _ => {
@@ -81,10 +81,10 @@ fn match_api_key<T>(request: &Request<'_>, key: &str, result: T) -> Outcome<T, E
         }
     };
 
-    if constant_time_eq(key.as_bytes(), input_api_key.as_bytes()) {
+    if keys.iter().any(|key| constant_time_eq(key.as_bytes(), input_api_key.as_bytes())) {
         Outcome::Success(result)
     } else {
-        format_err!("Invalid API key for read access")
+        format_err!("Invalid API key")
             .status(Status::Unauthorized)
             .into()
     }
