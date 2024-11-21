@@ -19,7 +19,6 @@ use figment::{
     providers::{Env, Format, Toml},
     Figment,
 };
-use libwally::manifest;
 use libwally::{
     manifest::{Manifest, MANIFEST_FILE_NAME},
     package_id::PackageId,
