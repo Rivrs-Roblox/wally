@@ -66,7 +66,8 @@ pub fn resolve(
 ) -> anyhow::Result<Resolve> {
     let mut resolve = Resolve::default();
 
-    // Ajouter le projet root dans le graphe.
+    // Insert root project into graph and activated dependencies, as it'll
+    // always be present.
     resolve.activated.insert(root_manifest.package_id());
     resolve.metadata.insert(
         root_manifest.package_id(),
@@ -77,7 +78,7 @@ pub fn resolve(
         },
     );
 
-    // File d'attente pour les dépendances à résoudre.
+    // Queue of all dependency requests that need to be resolved.
     let mut packages_to_visit = VecDeque::new();
 
     for (alias, req) in &root_manifest.dependencies {
@@ -110,8 +111,10 @@ pub fn resolve(
         });
     }
 
-    // Boucle pour résoudre les dépendances.
+    // Workhorse loop: resolve all dependencies, depth-first.
     'outer: while let Some(dependency_request) = packages_to_visit.pop_front() {
+        // Locate all already-activated packages that might match this
+        // dependency request.
         let mut matching_activated: Vec<_> = resolve
             .activated
             .iter()
@@ -119,8 +122,12 @@ pub fn resolve(
             .cloned()
             .collect();
 
+        // Sort our list of candidates by descending version so that we can pick
+        // newest candidates first.
         matching_activated.sort_by(|a, b| b.version().cmp(a.version()));
 
+        // Check for the highest version already-activated package that matches
+        // our constraints.
         for package_id in &matching_activated {
             if dependency_request.package_req.matches_id(package_id) {
                 let metadata = resolve
@@ -128,6 +135,14 @@ pub fn resolve(
                     .get_mut(package_id)
                     .expect("activated package was missing metadata");
 
+                // [ origin_realm clarification ]
+                // We want to set the origin to the most restrictive origin possible.
+                // For example we want to keep packages in the dev realm unless a dependency
+                // with a shared/server origin requires it. This way server/shared dependencies
+                // which only originate from dev dependencies get put into the dev folder even
+                // if they usually belong to another realm. Likewise we want to keep shared
+                // dependencies in the server realm unless they are explicitly required as a
+                // shared dependency.
                 let realm_match = match (metadata.origin_realm, dependency_request.origin_realm) {
                     (_, Realm::Shared) => Realm::Shared,
                     (Realm::Shared, _) => Realm::Shared,
@@ -149,12 +164,15 @@ pub fn resolve(
             }
         }
 
+        // Look through all our packages sources in order of priority
         let (source_registry, mut candidates) = package_sources
             .source_order()
             .iter()
             .find_map(|source| {
                 let registry = package_sources.get(source).unwrap();
 
+                // Pull all of the possible candidate versions of the package we're
+                // looking for from the highest priority source which has them.
                 match registry.query(&dependency_request.package_req) {
                     Ok(manifests) => Some((source, manifests)),
                     Err(_) => None,
@@ -167,6 +185,12 @@ pub fn resolve(
                 )
             })?;
 
+        // Sort our candidate packages by descending version, so that we try the
+        // highest versions first.
+        //
+        // Additionally, if there were any packages that were previously used by
+        // our lockfile (in `try_to_use`), prioritize those first. This
+        // technique is the one used by Cargo.
         candidates.sort_by(|a, b| {
             let contains_a = try_to_use.contains(&a.package_id());
             let contains_b = try_to_use.contains(&b.package_id());
@@ -185,11 +209,20 @@ pub fn resolve(
         let mut conflicting = Vec::new();
 
         for candidate in filtered_candidates {
+            // Conflicts occur if two packages are SemVer compatible. We choose
+            // to only allow one compatible copy of a given package to prevent
+            // common user errors.
+
             let has_conflicting = matching_activated
                 .iter()
                 .any(|activated| compatible(&candidate.package.version, activated.version()));
 
             if has_conflicting {
+                // This is a matching candidate, but it conflicts with a
+                // candidate we already selected before. We'll note that this
+                // happened. If there are no other matching versions that don't
+                // conflict, we'll report this in an error.
+
                 conflicting.push(candidate.package_id());
                 continue;
             }
@@ -222,7 +255,7 @@ pub fn resolve(
                     origin_realm: dependency_request.origin_realm,
                     package_alias: alias.clone(),
                     package_req: req.clone(),
-                });
+                })
             }
 
             for (alias, req) in &candidate.server_dependencies {
@@ -232,7 +265,7 @@ pub fn resolve(
                     origin_realm: dependency_request.origin_realm,
                     package_alias: alias.clone(),
                     package_req: req.clone(),
-                });
+                })
             }
 
             continue 'outer;
@@ -245,20 +278,36 @@ pub fn resolve(
                 req_realm = dependency_request.request_realm,
                 req = dependency_request.package_req,
             );
+        } else {
+            let conflicting_debug: Vec<_> = conflicting
+                .into_iter()
+                .map(|id| format!("{:?}", id))
+                .collect();
+
+            bail!(
+                "All possible candidates for package {req} ({req_realm:?}) conflicted with other \
+                 packages that were already installed. These packages were previously selected: \
+                 {conflicting}",
+                req = dependency_request.package_req,
+                req_realm = dependency_request.request_realm,
+                conflicting = conflicting_debug.join(", "),
+            );
         }
-
-        conflicting.sort_by(|a, b| b.version().cmp(a.version()));
-        let latest_conflict = conflicting.first().unwrap();
-
-        resolve.activate(
-            dependency_request.request_source.clone(),
-            dependency_request.package_alias.clone(),
-            dependency_request.origin_realm,
-            latest_conflict.clone(),
-        );
     }
 
     Ok(resolve)
+}
+
+fn compatible(a: &Version, b: &Version) -> bool {
+    if a == b {
+        return true;
+    }
+
+    if a.major == 0 && b.major == 0 {
+        return a.minor == b.minor
+    } else {
+        return a.major == b.major
+    }
 }
 
 pub struct DependencyRequest {
