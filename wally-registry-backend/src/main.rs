@@ -19,7 +19,7 @@ use figment::{
     providers::{Env, Format, Toml},
     Figment,
 };
-use libwally::manifest;
+use libwally::{manifest, package_id};
 use libwally::{
     manifest::{Manifest, MANIFEST_FILE_NAME},
     package_id::PackageId,
@@ -157,22 +157,24 @@ async fn publish(
     let mut package_id = manifest.package_id();
 
     // Vérification de la version existante et incrémentation automatique du patch
-    while index
-        .get_package_metadata(package_id.name())
-        .ok()
-        .and_then(|metadata| {
-            metadata
-                .versions
-                .iter()
-                .find(|published_manifest| published_manifest.package.version == *package_id.version())
-                .cloned()
-        })
-        .is_some()
-    {
-        let mut new_version = (*package_id.version()).clone();
-        new_version.increment_patch();
-        package_id = PackageId::new(package_id.name().clone(), new_version);
-        manifest.package.version = package_id.version().clone();
+    if !package_id.name().to_string().starts_with("snapshot/") {
+        while index
+            .get_package_metadata(package_id.name())
+            .ok()
+            .and_then(|metadata| {
+                metadata
+                    .versions
+                    .iter()
+                    .find(|published_manifest| published_manifest.package.version == *package_id.version())
+                    .cloned()
+            })
+            .is_some()
+        {
+            let mut new_version = (*package_id.version()).clone();
+            new_version.increment_patch();
+            package_id = PackageId::new(package_id.name().clone(), new_version);
+            manifest.package.version = package_id.version().clone();
+        }
     }
 
     if !authorization.can_write_package(&package_id, &index)? {
