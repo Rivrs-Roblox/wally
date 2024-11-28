@@ -19,7 +19,6 @@ use figment::{
     providers::{Env, Format, Toml},
     Figment,
 };
-use libwally::{manifest, package_id};
 use libwally::{
     manifest::{Manifest, MANIFEST_FILE_NAME},
     package_id::PackageId,
@@ -153,29 +152,8 @@ async fn publish(
 
     index.update()?;
 
-    let mut manifest = get_manifest(&mut archive).status(Status::BadRequest)?;
-    let mut package_id = manifest.package_id();
-
-    // Vérification de la version existante et incrémentation automatique du patch
-    if !package_id.name().to_string().starts_with("snapshot/") {
-        while index
-            .get_package_metadata(package_id.name())
-            .ok()
-            .and_then(|metadata| {
-                metadata
-                    .versions
-                    .iter()
-                    .find(|published_manifest| published_manifest.package.version == *package_id.version())
-                    .cloned()
-            })
-            .is_some()
-        {
-            let mut new_version = (*package_id.version()).clone();
-            new_version.increment_patch();
-            package_id = PackageId::new(package_id.name().clone(), new_version);
-            manifest.package.version = package_id.version().clone();
-        }
-    }
+    let manifest = get_manifest(&mut archive).status(Status::BadRequest)?;
+    let package_id = manifest.package_id();
 
     if !authorization.can_write_package(&package_id, &index)? {
         return Err(format_err!(
@@ -185,6 +163,7 @@ async fn publish(
         .status(Status::Unauthorized));
     }
 
+    // If a user can write but isn't in the scope owner file then we should add them!
     if let WriteAccess::Github(github_info) = authorization {
         let user_id = github_info.id();
         let scope = package_id.name().scope();
@@ -194,8 +173,18 @@ async fn publish(
         }
     }
 
+    let package_metadata = index.get_package_metadata(manifest.package_id().name());
+
+    if let Ok(metadata) = package_metadata {
+        if metadata.versions.iter().any(|published_manifest| {
+            published_manifest.package.version == manifest.package.version
+        }) && !manifest.package_id().name().to_string().starts_with("snapshot/") {
+            return Err(format_err!("package already exists in index").status(Status::Conflict));
+        }
+    }
+
     storage
-        .write(&package_id, &archive.into_inner().into_inner())
+        .write(&manifest.package_id(), &archive.into_inner().into_inner())
         .await
         .context("could not write package to storage backend")?;
 
@@ -204,20 +193,13 @@ async fn publish(
         .context("could not publish package to index")?;
 
     if let Ok(mut search_backend) = search_backend.try_write() {
+        // TODO: Recrawling the whole index for each publish is very wasteful!
+        // Eventually this will get too expensive and we should only add the new package.
         search_backend.crawl_packages(&index)?;
     }
 
-    let mut msg: String = "Package published successfully: ".to_owned();
-    let name: String = package_id.name().to_string();
-    let version: String = package_id.version().to_string();
-
-    msg.push_str(&name);
-    msg.push('@');
-    msg.push_str(&version);
-
     Ok(Json(json!({
-        "message": msg,
-        "version": package_id.version().to_string()
+        "message": "Package published successfully!"
     })))
 }
 
