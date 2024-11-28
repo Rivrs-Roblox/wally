@@ -207,8 +207,16 @@ async fn publish(
         search_backend.crawl_packages(&index)?;
     }
 
+    let mut msg: String = "Package published successfully: ".to_owned();
+    let name: String = package_id.name().to_string();
+    let version: String = package_id.version().to_string();
+
+    msg.push_str(&name);
+    msg.push('@');
+    msg.push_str(&version);
+
     Ok(Json(json!({
-        "message": "Package published successfully!",
+        "message": msg,
         "version": package_id.version().to_string()
     })))
 }
