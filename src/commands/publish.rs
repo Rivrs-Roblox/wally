@@ -83,7 +83,12 @@ impl PublishSubcommand {
             .send()?;
 
         if response.status().is_success() {
-            println!("Package published successfully!");
+            let response_json: serde_json::Value = response.json()?;
+            if let Some(message) = response_json.get("message").and_then(|m| m.as_str()) {
+                println!("{}", message);
+            } else {
+                println!("Publish succeeded, but no message in the response.");
+            }
         } else {
             println!("Error: {}", response.status());
             println!("{}", response.text()?);
