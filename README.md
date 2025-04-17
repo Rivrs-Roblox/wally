@@ -267,4 +267,4 @@ The official Wally registry is available at https://github.com/upliftgames/wally
 [toml]: https://toml.io/
 
 ## License
-Wally is available under the terms of the Mozilla Public License Version 2.0. Terms and conditions are available in [LICENSE.txt](LICENSE.txt) or at <https://www.mozilla.org/en-US/MPL/2.0/>.x
+Wally is available under the terms of the Mozilla Public License Version 2.0. Terms and conditions are available in [LICENSE.txt](LICENSE.txt) or at <https://www.mozilla.org/en-US/MPL/2.0/>.
